@@ -1,0 +1,12 @@
+#!/bin/sh
+width=`cat /tmp/pup_event_frontend_scrn_x`
+height=`cat /tmp/pup_event_frontend_scrn_y`
+echo $width x $height
+
+echo '
+<window width-request="'$width'"
+		height-request="'$height'"
+		decorated="false">
+  <button>
+  </button>
+</window>'|gtkdialog -s

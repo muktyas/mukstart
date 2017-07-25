@@ -1,0 +1,87 @@
+#!/bin/sh
+buat_tombol(){
+for ((i=1;i<$1;i++));do
+ echo '
+ <button>
+  <label>'$2$i'</label>
+ </button>'
+done
+}
+export buat_tombol
+
+echo '
+<window>
+ <vbox>
+  
+  
+   
+  <hbox>
+
+   <button>
+    <label>username</label>
+    <variable>usernamebutton</variable>
+   </button>
+   
+   <entry activates-default="true" has-focus="true">
+    <action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Left ] && echo true)">grabfocus:usernamebutton</action>
+    <action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Right ] && echo true)">grabfocus:logoutbutton</action>
+   </entry>
+   
+   <button>
+    <label>logout</label>
+    <action>show:logoutbox</action>
+    <action>hide:logoutbutton</action>
+    <action>hide:menubox</action>
+    <variable>logoutbutton</variable>
+   </button>
+   
+   <button>
+    <label>"expand"</label>
+    <action>./besar&</action>
+    <action>EXIT:okay</action>
+    <variable>expandbutton</variable>
+   </button>
+      
+  </hbox>
+  
+  <hbox visible="false" space-expand="true" space-fill="true">
+  <vbox>
+  <hbox spacing="false" space-expand="true" space-fill="true">
+   '"`buat_tombol 4 logout`"'
+  </hbox>  
+  <hbox spacing="false" space-expand="true" space-fill="true">
+   '"`buat_tombol 4 logout`"'
+  </hbox>
+  </vbox>
+  
+   <button>
+    <label>sembunyi</label>
+    <action>hide:logoutbox</action>
+    <action>show:logoutbutton</action>
+    <action>show:menubox</action>
+   </button>
+   <variable>logoutbox</variable>
+  </hbox>
+  
+  <hbox>
+   <vbox> 
+    '"`buat_tombol 10 main_menu`"'
+    <variable>leftside</variable>
+   </vbox>
+   
+   <tree headers-visible="false" hover-selection="true">
+    <input>for i in {1..10};do echo mainmenu ke $i;done</input>
+   </tree>
+   
+   <tree rules-hint="true" headers-visible="false" hover-selection="true">
+    <input>for i in {1..8};do echo aplikasi ke$i;done</input>
+   </tree>
+   <variable>menubox</variable>
+  </hbox>
+  
+  
+  <text>
+   <label>info aplikasi</label>
+  </text>
+ </vbox>
+</window>'|gtkdialog -s
