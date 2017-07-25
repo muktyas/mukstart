@@ -1,0 +1,58 @@
+#!/bin/sh
+buat_tombol(){
+for ((i=1;i<$1;i++));do
+ echo '
+ <button>
+  <label>tombol'$i'</label>
+ </button>'
+done
+}
+export buat_tombol
+
+echo '
+<window>
+ <vbox>
+  <hbox>
+   <button>
+    <label>username</label>
+   </button>
+   
+   <entry>
+   </entry>
+   
+   
+   <button>
+    <label>logout</label>
+    <action>show:logoutbox</action>
+    <action>hide:logoutbutton</action>
+    <variable>logoutbutton</variable>
+   </button>
+  </hbox>
+  
+  <hbox visible="false" spacing="false" space-expand="true" space-fill="true">
+   '"`buat_tombol 5`"'
+   <button>
+    <label>sembunyi</label>
+    <action>hide:logoutbox</action>
+    <action>show:logoutbutton</action>
+   </button>
+   <variable>logoutbox</variable>
+  </hbox>
+  
+  
+  <hbox>
+   <vbox> 
+    '"`buat_tombol 10`"'
+   </vbox>
+   
+   <tree rules-hint="true" headers-visible="false" hover-selection="true">
+    <input>for i in {1..8};do echo aplikasi ke$i;done</input>
+   </tree>
+  </hbox>
+  
+  
+  <text>
+   <label>info aplikasi</label>
+  </text>
+ </vbox>
+</window>'|gtkdialog -s
