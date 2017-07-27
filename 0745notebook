@@ -1,0 +1,119 @@
+#!/bin/sh
+buat_tombol(){
+for ((i=1;i<=$1;i++));do
+ echo '
+ <button>
+  <label>'$2$i'</label>
+ </button>'
+done
+}
+
+buat_tombol_besar(){
+
+	#daftar semua file yang ada di sini
+	cd /usr/share/applications/
+
+	n=0
+	kolom=4
+	for i in *;do
+	 ((n++))
+	 [ $(( n%kolom )) == 1 ] && echo ' <hbox space-fill="true" space-expand="true" spacing="false">'
+	 
+	 echo '  <button relief="2" width-request="100" height-request="100"><label>'$i'</label></button>'
+	 [ $(( n%kolom )) == 0 ] && echo ' </hbox>'
+	done
+	[ $(( n%kolom )) != 0 ] && echo ' </hbox>'
+}
+
+export buat_tombol
+
+echo '
+<window>
+ <vbox>
+  
+  
+   
+  <hbox>
+
+   <button>
+    <label>'$HOSTNAME'</label>
+    
+    <variable>usernamebutton</variable>
+   </button>
+   
+   <entry activates-default="true" has-focus="true">
+    <action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Left ] && echo true)">grabfocus:usernamebutton</action>
+    <action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Right ] && echo true)">grabfocus:logoutbutton</action>
+   </entry>
+   
+   <button>
+    <label>logout</label>
+    <action>show:logoutbox</action>
+    <action>grabfocus:sembunyibutton</action>
+    ##<action>show:logoutbox</action>
+    ##<action>hide:logoutbutton</action>
+    ##<action>hide:menubox</action>
+    <variable>logoutbutton</variable>
+   </button>
+   
+      
+  </hbox>
+  
+  <hbox space-fill="true" space-expand="true">
+  
+  <vbox visible="false" space-expand="true" space-fill="true">
+   '"`buat_tombol 6 logout`"'
+  
+   <button>
+    <label>sembunyi</label>
+    <action>hide:logoutbox</action>
+    <action>show:logoutbutton</action>
+    <action>show:menubox</action>
+    <action>grabfocus:logoutbutton</action>
+    <variable>sembunyibutton</variable>
+   </button>
+   <variable>logoutbox</variable>
+  </vbox>
+  
+  <notebook>
+  <vbox>
+  <hbox>
+  
+    
+   <tree headers-visible="false" hover-selection="true">
+    <input>for i in {1..15};do echo mainmenu ke $i;done</input>
+    <height>350</height>
+    <width>125</width>
+   </tree>
+   
+   <tree rules-hint="true" headers-visible="false" hover-selection="true">
+    <input>for i in {1..8};do echo aplikasi ke$i;done</input>
+    <width>300</width>
+   </tree>
+   
+  </hbox>
+  
+  <hbox>
+  <text>
+   <label>info aplikasi</label>
+  </text>
+  <button>
+    <label>"expand"</label>
+    <action>./besar&</action>
+    <action>EXIT:okay</action>
+    <variable>expandbutton</variable>
+   </button>
+   </hbox>
+
+  <variable>menubox</variable>
+ </vbox>
+ <vbox scrollable="true" width="400" height="300" spacing="false">
+  <button></button>
+  '"`buat_tombol_besar`"'
+ </vbox>
+ </notebook>
+ 
+ </hbox>
+ 
+ </vbox>
+</window>'|sed 's/##.*//'|gtkdialog -s

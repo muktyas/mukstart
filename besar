@@ -1,0 +1,41 @@
+#!/bin/sh
+width=`cat /tmp/pup_event_frontend_scrn_x`
+height=`cat /tmp/pup_event_frontend_scrn_y`
+echo $width x $height
+
+
+buattombol(){
+	#daftar semua file yang ada di sini
+	cd /usr/share/applications/
+
+	n=0
+	kolom=6
+	for i in *;do
+	 ((n++))
+	 [ $(( n%kolom )) == 1 ] && echo ' <hbox space-fill="true" space-expand="true" spacing="false">'
+	 
+	 echo '  <button relief="2" width-request="100" height-request="100"><label>'$i'</label></button>'
+	 [ $(( n%kolom )) == 0 ] && echo ' </hbox>'
+	done
+	[ $(( n%kolom )) != 0 ] && echo ' </hbox>'
+}
+
+echo '
+<window width-request="'$width'"
+		height-request="'$height'"
+		decorated="false">
+  
+  <vbox>
+    <hbox homogeneous="true">
+    <text><label>""</label></text>
+    <entry>
+      <width>100</width>
+    </entry>
+    <text><label>""</label></text>
+    </hbox>
+    
+    <vbox scrollable="true" width="800" height="300" spacing="false">
+    '"`buattombol`"'
+    </vbox>
+  </vbox>
+</window>'|gtkdialog -s
