@@ -1,0 +1,29 @@
+#!/bin/bash
+daftarlengkapku(){
+rm daftarlengkap
+mkdir -p pixmaps
+
+for file in /usr/share/applications/*.desktop ;do
+	while read line; do
+		case $line in
+			Name=*) N="${line[@]##*=}"'|';;
+			Icon=*) I="${line[@]##*=}" # remove all char before the last "="
+				if [[ $I == *\/* ]];then # if there any "/" appear
+					ln -sf $I pixmaps/;
+				fi
+				
+				if [[ ${I: -4:1} == "." ]];then #last 4th char is dot?
+					I=${I%.*} #remove extension and the dot also
+				fi
+				
+				I=${I##*/}'|';; #remove all before the last "/" (remain only filename)
+			Comment=*) C="${line[@]##*=}"'|';;
+			Exec=*) E="${line[@]##*=}"'|';;
+		esac
+	done < $file
+	echo $I$N$E$C${file##*/}>>daftarlengkap
+	I="|";N="|";E="|";C="|";
+done
+}
+
+daftarlengkapku
