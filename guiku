@@ -1,0 +1,60 @@
+#!/bin/sh
+cari(){
+	grep -i "$e" daftarlengkap >hasilcari
+	cut -d"|" -f1,2 hasilcari>cari_ikon_nama
+	head -1 hasilcari|cut -d"|" -f4 >cari_komentar
+	if [[ `cat cari_ikon_nama` == "" ]];then echo "dialog-warning|Hey "$HOSTNAME", You don't have that apps,Right?">cari_ikon_nama; fi
+}
+export -f cari
+
+infocari(){
+	if [[ "$t" != "" ]];then
+		grep "|$t|" hasilcari |cut -d"|" -f4>cari_komentar #cut -d"|" -f4 hasilcari>cari_komentar
+	fi
+}
+export -f infocari
+
+jalancari(){
+	$(grep -i "$t" hasilcari|cut -d"|" -f3)
+}
+export -f jalancari
+
+entercari(){
+	$(head -1 hasilcari|cut -d"|" -f3)
+}
+export -f entercari
+
+
+export XDG_DATA_DIRS=$(pwd):$XDG_DATA_DIRS
+echo $XDG_DATA_DIRS
+echo "find|What are you looking for, "$HOSTNAME"?"> cari_ikon_nama
+echo "">cari_komentar
+echo '
+<window window_position="1">
+  <vbox width-request="300">
+	<entry>
+		<action signal="changed">cari</action>
+		<action signal="changed">refresh:t</action>
+		<action signal="changed">refresh:info</action>
+		<action signal="activate">entercari&</action>
+		<action signal="activate">EXIT:exit</action>
+		<variable>e</variable>
+	</entry>
+	<tree rules-hint="true" headers-visible="false" hover-selection="true">
+		<height>500</height>
+		<action signal="cursor_changed">infocari</action>
+		<action signal="cursor_changed">refresh:info</action>
+		<action signal="button-release-event">jalancari&</action>
+		<action signal="button-release-event">EXIT:exit</action>
+		<action>jalancari&</action>
+		<action>EXIT:jalancari</action>
+		<input file icon-column="0">cari_ikon_nama</input>
+		<variable>t</variable>
+	</tree>
+	<text xalign="1">
+		<input file>cari_komentar</input>
+		<variable>info</variable>
+	</text>
+  </vbox>
+</window>'>guicari
+gtkdialog -f guicari
