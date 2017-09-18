@@ -1,0 +1,91 @@
+#!/bin/sh
+daftarlengkapku(){
+rm /root/.mukstart/muksearch/daftarlengkap
+mkdir -p /root/.mukstart/muksearch/pixmaps
+
+for file in /usr/share/applications/*.desktop ;do
+	while read line; do
+		case $line in
+			Name=*) N="${line[@]}"'|';;
+			Icon=*) I="${line[@]##*=}" # remove all char before the last "="
+				if [[ $I == *\/* ]];then # if there any "/" appear
+					ln -sf $I /root/.mukstart/muksearch/pixmaps/;
+				fi
+				
+				if [[ ${I: -4:1} == "." ]];then #last 4th char is dot?
+					I=${I%.*} #remove extension and the dot also
+				fi
+				
+				I=${I##*/}'|';; #remove all before the last "/" (remain only filename)
+			Comment=*) C="${line[@]}"'|';;
+			Exec=*) E="${line[@]}"'|';;
+		esac
+	done < $file
+	echo $I$N$E$C${file##*/}>>/root/.mukstart/muksearch/daftarlengkap
+	I="|";N="|";E="|";C="|";
+done
+}
+
+daftarlengkapku
+
+
+cari(){
+	grep -i -e "Name=.*$e" -e "Comment=.*$e" -e "Exec=.*$e" /root/.mukstart/muksearch/daftarlengkap|sed 's/Name=//g; s/Comment=//g; s/Exec=//g' > /root/.mukstart/muksearch/hasilcari
+	cut -d"|" -f1,2 /root/.mukstart/muksearch/hasilcari > /root/.mukstart/muksearch/cari_ikon_nama
+	head -1 /root/.mukstart/muksearch/hasilcari|cut -d"|" -f4 > /root/.mukstart/muksearch/cari_komentar
+	if [[ `cat /root/.mukstart/muksearch/cari_ikon_nama` == "" ]];then echo "dialog-warning|Hey "$HOSTNAME", You don't have that apps,Right?" > /root/.mukstart/muksearch/cari_ikon_nama; fi
+}
+export -f cari
+
+infocari(){
+	if [[ "$t" != "" ]];then
+		grep "|$t|" /root/.mukstart/muksearch/hasilcari |cut -d"|" -f4|sort -u > /root/.mukstart/muksearch/cari_komentar #cut -d"|" -f4 hasilcari>cari_komentar
+	fi
+}
+export -f infocari
+
+jalancari(){
+	$(grep -i "$t" /root/.mukstart/muksearch/hasilcari|cut -d"|" -f3)
+}
+export -f jalancari
+
+entercari(){
+	$(head -1 /root/.mukstart/muksearch/hasilcari|cut -d"|" -f3)
+}
+export -f entercari
+
+
+export XDG_DATA_DIRS=/root/.mukstart/muksearch/:$XDG_DATA_DIRS
+echo $XDG_DATA_DIRS
+echo "find|What are you looking for, "$HOSTNAME"?" > /root/.mukstart/muksearch/cari_ikon_nama
+echo "" > /root/.mukstart/muksearch/cari_komentar
+echo '
+<window window_position="1">
+  <vbox width-request="300">
+	<entry>
+		<action signal="changed">cari</action>
+		<action signal="changed">refresh:t</action>
+		<action signal="changed">refresh:info</action>
+		<action signal="activate">entercari&</action>
+		<action signal="activate">EXIT:exit</action>
+		<variable>e</variable>
+	</entry>
+	<tree rules-hint="true" headers-visible="false" hover-selection="true">
+		<height>500</height>
+		<action signal="cursor_changed">infocari</action>
+		<action signal="cursor_changed">refresh:info</action>
+		<action signal="button-release-event">jalancari&</action>
+		<action signal="button-release-event">EXIT:exit</action>
+		<action>jalancari&</action>
+		<action>EXIT:exit</action>
+
+		<input file icon-column="0">/root/.mukstart/muksearch/cari_ikon_nama</input>
+		<variable>t</variable>
+	</tree>
+	<text xalign="1">
+		<input file>/root/.mukstart/muksearch/cari_komentar</input>
+		<variable>info</variable>
+	</text>
+  </vbox>
+</window>' > /root/.mukstart/muksearch/guicari
+gtkdialog -f /root/.mukstart/muksearch/guicari
