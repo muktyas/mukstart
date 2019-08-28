@@ -1,0 +1,244 @@
+#!/bin/sh
+# v1 search applications and recent history
+# by recobayu
+
+export muksdir=/root/.muksearch
+daftarlengkapku(){
+rm -r $muksdir/daftarlengkap
+mkdir -p $muksdir/pixmaps
+
+for file in /usr/share/applications/*.desktop ;do
+	while read line; do
+		case $line in
+			Name=*) N="${line[@]##*=}";;
+			Icon=*) I="${line[@]##*=}" # remove all char before the last "="
+				if [[ $I == *\/* ]];then # if there any "/" appear
+					ln -sf $I $muksdir/pixmaps/;
+					Ifull=$I
+				else
+					for dir in pixmaps pixmaps/puppy;do
+						ada=`ls /usr/share/${dir}|grep $I`
+						if [ "$ada" != "" ];then
+							#echo /usr/share/${dir}/$I
+							Ifull=/usr/share/${dir}/$ada
+						fi
+					done
+				fi
+				
+				if [[ ${I: -4:1} == "." ]];then #last 4th char is dot?
+					I=${I%.*} #remove extension and the dot also
+				fi
+				
+				I=${I##*/};; #remove all before the last "/" (remain only filename)
+			Comment=*) C="${line[@]##*=}";;
+			Exec=*) E="${line[@]##*=}";;
+		esac
+	done < $file
+	echo Icon=$I'|'Iconfull=$Ifull'|'Name=$N'|'Exec=$E'|'Comment=$C>>$muksdir/daftarlengkap
+	I="";Ifull="";N="";E="";C="";
+done
+#~ sort -u $muksdir/daftarlengkap > $muksdir/daftarlengkap
+}
+
+number_of_daftarlengkap=`cat $muksdir/daftarlengkap|wc -l`
+number_of_apps=`ls /usr/share/applications/*.desktop|wc -l`
+if [ "$number_of_daftarlengkap" != "$number_of_apps" ];then
+	daftarlengkapku
+	echo new
+fi
+
+recently_used(){
+	rm $muksdir/recent
+	rm $muksdir/recent_all
+	
+	#from mochimoppel
+	XBEL_PATH=/root/.local/share/recently-used.xbel
+	if [[ -e $XBEL_PATH ]];then
+	   MAX_ITEMS=20
+	   IFS=$'\n'
+	   printf -v ALL "$(sed -rn 's/%/\\x/g
+	   s_^.*file://([^ "]*).*modified="([^"]*).*$_\2@\1_p
+	   ' "$XBEL_PATH" | sort -r | sed 's/.*@//')"
+	   for file in $ALL ;do
+		  [[ -e $file ]] && CNT=$((CNT+1)) && echo "$file" >> $muksdir/recent_all 
+		  ((CNT==MAX_ITEMS)) && break
+	   done	   
+	else
+		echo  "no recent activity" > $muksdir/recent
+	fi
+	sed 's/.*\///' $muksdir/recent_all >$muksdir/recent
+}
+
+export -f recently_used
+
+recently_used
+
+#top_apps(){
+#	apps=`cat -n $muksdir/top_apps|sort -uk2|sort -nk1|cut -f2`
+#	last_app=`echo "$apps"|tail -5|tac`
+#	
+#}
+echo "" > $muksdir/info
+
+info_recent(){
+	grep -w "$tree_recent$" $muksdir/recent_all > $muksdir/info
+}
+export -f info_recent
+
+info_search(){
+	grep "Name=$tree_search" $muksdir/daftarlengkap |cut -d "|" -f5|cut -d "=" -f2|head -1> $muksdir/info
+}
+export -f info_search
+
+buat_tombol(){
+if [ "`cat $muksdir/top_apps`" != "" ];then
+#~ if [ ! -f "$muksdir/top_apps" ];then
+	#~ cat -n $muksdir/top_apps|sort -uk2|sort -nk1|cut -f2 > $muksdir/top_apps2
+	tail -5 $muksdir/top_apps|tac > $muksdir/top_five
+	
+	number_of_top_apps=`cat $muksdir/top_five|wc -l`
+	width_of_char=60
+	max_char=$(( width_of_char/number_of_top_apps ))
+	
+	
+	for i in `cat $muksdir/top_five`;do
+		top_name=`grep "Exec=.*$i" $muksdir/daftarlengkap|cut -d"|" -f3|cut -d"=" -f2|head -1` # > $muksdir/top_icon_$i
+		top_icon=`grep "Exec=.*$i" $muksdir/daftarlengkap|cut -d"|" -f2|cut -d"=" -f2|head -1` # > $muksdir/top_icon_$i
+		top_comment=`grep "Exec=.*$i" $muksdir/daftarlengkap|cut -d"|" -f5|cut -d"=" -f2|head -1` # > $muksdir/top_comment_$i
+		
+		if [ -z $top_icon ];then
+			top_icon=/usr/share/pixmaps/puppy/execute.svg
+		fi
+	
+		if [ ${#top_name} -gt $max_char ];then
+			top_name=${top_name:0:$max_char}..
+		fi
+	
+		#~ if [ ${#i} -gt 15 ];then
+			#~ i_tulis=${top_name:0:15}..;
+		#~ else
+			#~ i_tulis=$i
+		#~ fi
+	
+		echo '
+		<button relief="2" image-position="2" tooltip-text="'$i'">
+			<action signal="enter">echo "'$top_comment'" >'$muksdir'/info</action>
+			<action signal="enter">refresh:info</action>
+			<action>'$i'&</action>
+			<action>EXIT:exit</action>
+			<label>'$top_name'</label>
+			<width>48</width>
+			<input file>'$top_icon'</input>
+		</button>'
+		
+	done
+else
+	echo '
+	<text>
+		<label>No recent Apps</label>
+	</text>'
+fi
+}
+export -f buat_tombol
+
+
+luru(){
+	grep -ie "Comment=.*$E" -e "Name=.*$E" -e "Exec=.*$E" $muksdir/daftarlengkap |sed 's/Name=//g; s/Icon=//g; s/Iconfull=//g; s/Comment=//g; s/Exec=//g' > $muksdir/cari_semua
+	#cat $muksdir/cari_semua
+	cut -d"|" -f1,3 $muksdir/cari_semua > $muksdir/cari_ikon_nama
+	head -1 $muksdir/cari_semua|cut -d"|" -f5 > $muksdir/info
+	if [[ `cat $muksdir/cari_ikon_nama` == "" ]];then echo "dialog-warning|Oops.. Sorry "$HOSTNAME", You don't have that apps.. :'(" > $muksdir/cari_ikon_nama; fi
+
+}
+export -f luru
+
+runit(){
+	run=$(grep "Name=$tree_search" $muksdir/daftarlengkap|cut -d"|" -f4|cut -d"=" -f2)
+	"$run"&
+	#~ grep -vw "$run" $muksdir/top_apps > $muksdir/top_apps
+	grep -v "$run" $muksdir/top_apps>$muksdir/top_without_new
+	mv $muksdir/top_without_new $muksdir/top_apps
+	echo "$run" >> $muksdir/top_apps
+}
+export -f runit
+
+runit_entry(){
+	run=$(head -1 $muksdir/cari_semua|cut -d"|" -f4|cut -d"=" -f2)
+	"$run"&
+	#~ grep -vw "$run" $muksdir/top_apps > $muksdir/top_apps
+	grep -v "$run" $muksdir/top_apps>$muksdir/top_without_new
+	mv $muksdir/top_without_new $muksdir/top_apps
+	echo "$run" >> $muksdir/top_apps
+}
+export -f runit_entry
+
+export XDG_DATA_DIRS=$muksdir:$XDG_DATA_DIRS
+
+export guiku='
+<window title="Muksearch" window_position="1" icon-name="gtk-about">
+  <vbox>
+    <entry>
+      <variable>E</variable>
+      <action>if [[ $E == "" ]];then echo 0 > '$muksdir'/ganti; else echo 1 > '$muksdir'/ganti;fi</action>
+      <action>refresh:nbmuks</action>
+      <action signal="changed">luru</action>
+	  <action signal="changed">refresh:tree_search</action>
+	  <action signal="changed">refresh:info</action>
+	  <action signal="activate">runit_entry</action>
+	  <action signal="activate">EXIT:exit</action>
+    </entry>
+    <notebook show-tabs="false" show-border="false">
+    <vbox>
+    <text xalign="0">
+      <label>Recent apps</label>
+    </text>
+    
+    <hbox homogeneous="true" space-fill="true">
+      '"`buat_tombol`"'
+    </hbox>
+    
+    <hbox spacing="10" homogeneous="false" space-fill="false" space-expand="false">
+    <text xalign="0">
+      <label>Recent activities</label>
+    </text>
+    <hbox space-expand="true" space-fill="true"><text><label>""</label></text></hbox>
+    </hbox>
+	
+	<tree rules-hint="true" headers-visible="false" hover-selection="true">
+	  <height>400</height>
+	  <width>600</width>
+	  <action signal="cursor_changed">info_recent</action>
+	  <action signal="cursor_changed">refresh:info</action>
+	  <action signal="button-release-event">rox -s $tree_recent</action>
+	  <action>rox -s $tree_recent</action>
+	  <input file>'$muksdir'/recent</input>
+	  <variable>tree_recent</variable>
+	</tree>
+    </vbox>
+    
+    <vbox>
+		<tree rules-hint="true" headers-visible="false" hover-selection="true">
+			<height>500</height>
+			<action signal="cursor_changed">info_search</action>
+			<action signal="cursor_changed">refresh:info</action>
+			<action signal="button-release-event">runit</action>
+			<action signal="button-release-event">EXIT:exit</action>
+			<action>runit</action>
+			<action>EXIT:exit</action>
+			<input file icon-column="0">'$muksdir'/cari_ikon_nama</input>
+			<variable>tree_search</variable>
+		</tree>
+    </vbox>
+    <input file>'$muksdir'/ganti</input>
+    <variable>nbmuks</variable>
+    </notebook>
+    
+    <text xalign="0">
+		<input file>'$muksdir'/info</input>
+		<variable>info</variable>
+    </text>
+  </vbox>
+</window>' 
+echo "$guiku" > $muksdir/gui_muksearch
+
+gtkdialog -f $muksdir/gui_muksearch
