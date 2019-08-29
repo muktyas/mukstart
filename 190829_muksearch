@@ -60,13 +60,14 @@ recently_used(){
 	   s_^.*file://([^ "]*).*modified="([^"]*).*$_\2@\1_p
 	   ' "$XBEL_PATH" | sort -r | sed 's/.*@//')"
 	   for file in $ALL ;do
-		  [[ -e $file ]] && CNT=$((CNT+1)) && echo "$file" >> $muksdir/recent_all 
+		  [[ -e $file ]] && CNT=$((CNT+1)) && echo "$file" >> $muksdir/recent
 		  ((CNT==MAX_ITEMS)) && break
 	   done	   
 	else
 		echo  "no recent activity" > $muksdir/recent
 	fi
-	sed 's/.*\///' $muksdir/recent_all >$muksdir/recent
+	#~ sed 's/.*\///' $muksdir/recent_all >$muksdir/recent
+
 }
 
 export -f recently_used
@@ -81,7 +82,7 @@ recently_used
 echo "" > $muksdir/info
 
 info_recent(){
-	grep -w "$tree_recent$" $muksdir/recent_all > $muksdir/info
+	grep -w "|$tree_recent$" $muksdir/recent_gabung > $muksdir/info
 }
 export -f info_recent
 
@@ -175,7 +176,7 @@ export -f runit_entry
 export XDG_DATA_DIRS=$muksdir:$XDG_DATA_DIRS
 
 export guiku='
-<window title="Muksearch" window_position="1" icon-name="gtk-about">
+<window title="Muksearch" window_position="1" icon-name="gtk-save">
   <vbox>
     <entry>
       <variable>E</variable>
@@ -204,13 +205,13 @@ export guiku='
     <hbox space-expand="true" space-fill="true"><text><label>""</label></text></hbox>
     </hbox>
 	
-	<tree rules-hint="true" headers-visible="false" hover-selection="true">
+	<tree icon-name="folder" rules-hint="true" headers-visible="false" hover-selection="true">
 	  <height>400</height>
 	  <width>600</width>
-	  <action signal="cursor_changed">info_recent</action>
-	  <action signal="cursor_changed">refresh:info</action>
 	  <action signal="button-release-event">rox -s $tree_recent</action>
+	  <action signal="button-release-event">EXIT:exit</action>
 	  <action>rox -s $tree_recent</action>
+	  <action>EXIT:exit</action>
 	  <input file>'$muksdir'/recent</input>
 	  <variable>tree_recent</variable>
 	</tree>
@@ -238,6 +239,7 @@ export guiku='
 		<variable>info</variable>
     </text>
   </vbox>
+  <action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Escape ] && echo true )">exit:EXIT</action>
 </window>' 
 echo "$guiku" > $muksdir/gui_muksearch
 
