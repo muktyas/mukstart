@@ -1,0 +1,223 @@
+#!/bin/sh
+export mukstartdir=/root/.mukstart
+rm -r "$mukstartdir"
+mkdir -p "$mukstartdir"/pixmaps
+
+touch "$mukstartdir"/{daftarlengkap,submenu,info,nb_sub_file}
+echo "" > "$mukstartdir"/info
+
+
+printf 'favorite48|Recent
+x48|Desktop
+pc48|System
+configuration48|Setup
+utility48|Utility
+folder48|Filesystem
+paint48|Graphic
+word48|Document
+spread48|Business
+date48|Personal
+connect48|Network
+www48|Internet
+multimedia48|Multimedia
+games48|Fun' > "$mukstartdir"/menu
+
+
+daftarlengkap(){
+rm "$mukstartdir"/daftarlengkap
+#~ mkdir -p "$mukstartdir"/pixmaps
+for file in /usr/share/applications/*.desktop ;do
+	while read line; do
+		case "$line" in
+			Name=*) N="${line[@]##*=}";;
+			Icon=*) I="${line[@]##*=}" # remove all char before the last "="
+				if [[ "$I" == *\/* ]];then # if there any "/" appear
+					ln -sf "$I" "$mukstartdir"/pixmaps/;
+					Ifull="$I"
+				else
+					Ifull=`find -L /usr/share/pixmaps -type f -name "$I*" -print|head -n1`
+					
+				fi
+				
+				if [[ ${I: -4:1} == "." ]];then #last 4th char is dot?
+					I=${I%.*} #remove extension and the dot also
+				fi
+				
+				I=${I##*/};; #remove all before the last "/" (remain only filename)
+			Comment=*) C="${line[@]##*=}" ;;
+			Exec=*) E="${line[@]##*=}";;
+			Terminal=true) E="defaultterminal -e $E";;
+			Categories=*) Cat="${line[@]##*=}";;
+		esac
+	done < "$file"
+	
+	# this is for default apps in /usr/local/bin so the comment is the command
+	if [ "$C" == "" ];then
+		C="$E"
+	fi
+	
+	if [ "$N" != "" -o "$E" != "" -o "$C" != "" ];then
+		echo Icon="$I"'|'Iconfull="$Ifull"'|'Name="$N"'|'Exec="$E"'|'Comment="$C"'|'Categories="$Cat">>"$mukstartdir"/daftarlengkap
+	fi
+	I="";Ifull="";N="";E="";C="";Cat=""
+done
+}
+export -f daftarlengkap
+#~ [ ! -s "$mukstartdir"/daftarlengkap ] && daftarlengkap
+daftarlengkap
+
+submenuku(){
+mkdir -p "$mukstartdir"/submenus
+for menu in Desktop System Setup Utility Filesystem Graphic Document Business Personal Network Internet Multimedia Fun;do
+	case "$menu" in
+		Desktop)
+			cat='X-Desktop|X-Desktop-appearance|DesktopSettings|X-Desktop-settings|X-DesktopCountry|Accessibility|X-Desktop-windows|X-Desktop-sleep|Screensaver|X-Desktop-applet|X-DesktopApplets|Clock';;
+		System)
+			cat='X-System|System|HardwareSettings|Core|X-System-process|Monitor|X-SystemSchedule|X-System-memory|X-SystemMemory|X-System-print|X-System-storage|X-System-security|Security';;
+		Setup)
+			cat='X-Setup|X-Setup-puppy|X-SetupEntry|PackageManager|X-Setup-wizard|X-SetupWizard|X-Setup-installation|X-SetupUtility';;
+		Utility)
+			cat='X-Utility|Utility|Viewer|Electronics|Emulator|Engineering|X-Utility-development|Development|Building|Debugger|IDE|Profiling|ProjectManagement|RevisionControl|Translation|GUIDesigner|X-Utility-package|Archiving|Compression|X-Utility-shell|TerminalEmulator|Shell|X-Utility-help|Documentation';;
+		Filesystem)
+			cat='X-Filesystem|FileSystem|Filesystem|FileTools|X-Filesystem-filemanager|FileManager|X-Filesystem-mount|X-FilesystemMount|X-Filesystem-find|X-FilesystemFind|X-Filesystem-storage|X-FilesystemUtility';;
+		Graphic)
+			cat='X-Graphic|2DGraphics|3DGraphics|X-Graphic-paint|RasterGraphics|X-Graphic-draw|VectorGraphics|X-Graphic-flow|Chart|FlowChart|Presentation|X-Graphic-viewer|Viewer|X-Graphic-camera|Photography|X-Graphic-scanner|Scanning|OCR|X-Graphic-print|X-Graphic-utility|X-GraphicUtility';;
+		Document)
+			cat='X-Document|X-Document-layout|WordProcessor|WebDevelopment|Publishing|X-Document-catalog|Dictionary|X-Document-edit|TextEditor|X-Document-viewer|Viewer|X-Document-utility|X-DocumentUtility';;
+		Business)
+			cat='X-Business|X-Calculate|X-Business-spreadsheet|Spreadsheet|X-Business-planner|ProjectManagement|X-Business-finance|Finance|X-Business-calc|Calculator|X-CalculateUtility';;
+		Personal)
+			cat='X-Personal|X-Personal-database|ContactManagement|X-Personal-date|Calendar|X-Personal-organizer|PDA|X-Personal-security|X-Personal-timing|X-PersonalUtility|X-Personal-education|Languages|Science|ArtificialIntelligence|Astronomy|Biology|Chemistry|ComputerScience|DataVisualization|Economy|Electricity|Geography|Geology|Geoscience|History|ImageProcessing|Literature|Math|NumericalAnalysis|MedicalSoftware|Physics|Robotics|Sports|ParallelComputing';;
+		Network)
+			cat='X-Network|Network|X-Network-firewall|X-Network-phone|Dialup|X-Network-connect|HamRadio|RemoteAccess|X-Network-transfer|X-Network-utility';;
+		Internet)
+			cat='X-Internet|X-Internet-browser|WebBrowser|X-Internet-chat|InstantMessaging|Chat|VideoConference|X-Internet-mailnews|Email|News|X-Internet-transfer|Telephony|IRCClient|FileTransfer|P2P|X-Internet-login|X-Internet-block|X-Internet-utility';;
+		Multimedia)
+			cat='X-Multimedia|Recorder|X-Multimedia-mediaplayer|Player|X-Multimedia-audiovideo|AudioVideo|AudioVideoEditing|Tuner|X-Multimedia-sound|Music|Audio|Midi|Mixer|Sequencer|X-Multimedia-video|Video|TV|X-Multimedia-optical|DiskBurning|X-Multimedia-utility';;
+		Fun)
+			cat='X-Fun|Game|Amusement|BlocksGame|KidsGame|Simulation|SportsGame|X-Fun-adventure|ActionGame|AdventureGame|RolePlaying|X-Fun-boardgame|BoardGame|X-Fun-cardgame|CardGame|X-Fun-puzzle|StrategyGame|LogicGame|X-Fun-shooter|X-Fun-arcade|ArcadeGame';;
+	esac
+	grep -E "Categories=.*($cat)" "$mukstartdir"/daftarlengkap | cut -d "|" -f1,3|sed 's/Icon=//g' |sed 's/Name=//g'> "$mukstartdir"/submenus/"$menu"
+done
+}
+export -f submenuku
+#~ [ ! -s "$mukstartdir"/submenus ] && submenuku
+submenuku
+
+
+
+
+
+
+ln -sf /usr/local/lib/X11/pixmaps/* "$mukstartdir"/pixmaps/
+XDG_DATA_DIRS=$XDG_DATA_DIRS:"$mukstartdir"
+
+ganti_submenu(){
+	if [ "$tree_menu" != "Recent" ];then
+		#~ echo "$tree_menu"
+		#~ echo asal: "$mukstartdir"/submenus/$tree_menu
+		#~ echo tujuan: "$mukstartdir"/submenu
+		ln -sf "$mukstartdir"/submenus/$tree_menu "$mukstartdir"/submenu
+		echo "1" > "$mukstartdir"/nb_sub_file
+	else
+		echo "0" > "$mukstartdir"/nb_sub_file
+	fi
+}
+export -f ganti_submenu
+
+info_submenu(){
+	infoku=`grep "Name=$tree_submenu" "$mukstartdir/daftarlengkap"|cut -d"|" -f5|cut -d"=" -f2|head -1`
+	[ ${#infoku} -gt 90 ] && infoku=`echo ${infoku:0:90} ...`
+	printf "<b>$tree_submenu</b>\n$infoku" > "$mukstartdir"/info
+}
+export -f info_submenu
+
+runit(){
+	lengkapku=`grep "Name=$tree_submenu" "$mukstartdir/daftarlengkap"|head -1`
+	echo "$lengkapku"
+	$(echo "$lengkapku"|cut -d"|" -f4|cut -d"=" -f2)&
+	
+	#~ grep -v "$run_semua" $muksdir/daftarlengkap > $muksdir/daftarlengkap_tanpa_barusan
+	#~ mv $muksdir/daftarlengkap_tanpa_barusan $muksdir/daftarlengkap
+	
+	#~ (echo "$run_semua" && cat $muksdir/daftarlengkap) > $muksdir/daftar_sementara && mv $muksdir/daftar_sementara $muksdir/daftarlengkap
+	
+	#~ grep -v "$run_semua" $muksdir/top_apps_semua>$muksdir/top_semua_without_new
+	#~ mv $muksdir/top_semua_without_new $muksdir/top_apps_semua
+
+	#~ echo "$run_semua" >> $muksdir/top_apps_semua
+}
+export -f runit
+
+
+echo '
+<window>
+<vbox>
+  <hbox space-fill="true" space-expand="true">
+	<vbox space-fill="false" space-expand="false" spacing="20">
+		<button width-request="64" height-request="64">
+			<input file>'"$mukstartdir"/pixmaps/www48.png'</input>
+			<width>46</width>
+			<height>46</height>
+		</button>
+	</vbox>
+	
+	<vbox>
+	<entry>
+	</entry>
+	
+	<hbox space-fill="true" space-expand="true">
+		<hbox space-fill="false" space-expand="false">
+			<tree hover-selection="true" selection-mode="2" headers-visible="false" hscrollbar-policy="2">
+				<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Right ] && echo true )">grabfocus:tree_submenu</action>
+				<action signal="cursor_changed">ganti_submenu</action>
+				<action signal="cursor_changed">refresh:nb_sub</action>
+				<action signal="cursor_changed">refresh:tree_submenu</action>
+				<action signal="cursor_changed">echo "" > '"$mukstartdir"'/info</action>
+				<action signal="cursor_changed">refresh:text_info</action>
+				<height>380</height>
+				<width>130</width>
+				<input file icon-column="0">'"$mukstartdir"'/menu</input>
+				<variable>tree_menu</variable>
+			</tree>
+		</hbox>
+		
+		<notebook show-tabs="false" show-border="false">
+		<vbox shadow-type="3">
+			<button><label>recent apps here</label></button>
+		</vbox>
+		
+			<tree hover-selection="true" selection-mode="2" headers-visible="false" rules-hint="true" vscrollbar-policy="0" hscrollbar-policy="2">
+				<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Left ] && echo true )">grabfocus:tree_menu</action>
+				<action signal="button-release-event">runit</action>
+				<action signal="button-release-event">EXIT:exit</action>
+				<action>runit</action>
+				<action>EXIT:exit</action>
+				<action signal="cursor_changed">info_submenu</action>
+				<action signal="cursor_changed">refresh:text_info</action>
+				<width>300</width>
+				<input file icon-column="0">'"$mukstartdir/submenu"'</input>
+				<variable>tree_submenu</variable>
+			</tree>
+			
+		
+		<input file>'"$mukstartdir"'/nb_sub_file</input>
+		<variable>nb_sub</variable>
+		</notebook>
+		
+	</hbox>
+	
+	</vbox>
+  </hbox>
+	<vbox space-fill="false" space-expand="false">
+	<text use-markup="true" xalign="1" justify="1" wrap="false">
+		<input file>'"$mukstartdir"'/info</input>
+		<variable>text_info</variable>
+		<sensitive>state</sensitive>
+	</text>
+	</vbox>
+</vbox>
+	<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Escape ] && echo true )">exit:EXIT</action>
+</window>' > "$mukstartdir"/guimuks
+
+gtkdialog -f "$mukstartdir"/guimuks
