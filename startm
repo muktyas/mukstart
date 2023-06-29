@@ -1,24 +1,22 @@
 #!/bin/bash
+
+# startm by recobayu
+# start menu like in cinnamon
+#230630
+
 export location="/usr/share/applications"
 export working_directory="$HOME/.config/startm"
 
 [ ! -d "$working_directory" ] && mkdir -p "$working_directory"
 
-search(){
-  word="$1"
-  #~ echo "$working_directory"
-  #~ echo "$location"
 
-  #~ grep -rle "^Name=.*$word.*" -e "^Exec=.*$word.*" -e "^Comment=.*$word.*" "$location"|sort > "$working_directory/filename"
-  grep -irle "^Name=.*$word.*" -e "^Exec=.*$word.*" -e "^Comment=.*$word.*" "$location"|xargs -d '\n' grep -m 1 -i "^Name="|cut -d \= -f2|sort > "$working_directory/names"
-
-	name_top=`head -1 "$working_directory/names"`
-	#~ grep -rle "^Name=$name_top$" "$location" |xargs -d '\n' grep -e "^Comment="|cut -d\= -f2 > "$working_directory/comment"
-	printf "<b>$name_top</b>" > "$working_directory/name"
-	info "$name_top"
+close(){
+	pids=`ps ax|grep startm|awk '{print $1}'`
+	kill $pids 2> /dev/null
+	exit 0
 }
-export -f search
-#~ search ea
+export -f close
+
 
 info(){
   name="$1"
@@ -32,8 +30,20 @@ info(){
 		echo > "$working_directory/exec"
 	fi
 }
-info Geany
 export -f info
+
+search(){
+  word="$1"
+  grep -irle "^Name=.*$word.*" -e "^Exec=.*$word.*" -e "^Comment=.*$word.*" "$location"|xargs -d '\n' grep -m 1 -i "^Name="|cut -d \= -f2|sort > "$working_directory/names"
+
+	name_top=`head -1 "$working_directory/names"`
+	printf "<b>$name_top</b>" > "$working_directory/name"
+	info "$name_top"
+}
+export -f search
+search "*"
+
+
 
 run(){
   `cat "$working_directory/exec"` &
@@ -42,7 +52,7 @@ export -f run
 
 # gui
 echo '
-<window title="startm" window_position="1" icon-name="bookmark">
+<window title="startm" window_position="1" icon-name="bookmark" decorated="false">
 	<vbox>
 		<entry>
 			<action>search "$e"</action>
@@ -75,7 +85,9 @@ echo '
 			<variable>c</variable>
 		</text>
 	</vbox>
-	<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Escape ] && echo true )">exit:EXIT</action>
-	<action signal="focus-out-event">exit:EXIT</action>
-</window>' > "$working_directory/gui"
-gtkdialog -f "$working_directory/gui"
+	<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Escape ] && echo true )">exit:esc</action>
+	<action signal="focus-out-event">close</action>
+	<variable>startm_window</variable>
+</window>' > "$working_directory/gui_startm"
+gtkdialog -f "$working_directory/gui_startm"
+
