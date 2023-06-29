@@ -1,0 +1,81 @@
+#!/bin/bash
+export location="/usr/share/applications"
+export working_directory="$HOME/.config/startm"
+
+[ ! -d "$working_directory" ] && mkdir -p "$working_directory"
+
+search(){
+  word="$1"
+  #~ echo "$working_directory"
+  #~ echo "$location"
+
+  #~ grep -rle "^Name=.*$word.*" -e "^Exec=.*$word.*" -e "^Comment=.*$word.*" "$location"|sort > "$working_directory/filename"
+  grep -irle "^Name=.*$word.*" -e "^Exec=.*$word.*" -e "^Comment=.*$word.*" "$location"|xargs -d '\n' grep -m 1 -i "^Name="|cut -d \= -f2|sort > "$working_directory/names"
+
+	name_top=`head -1 "$working_directory/names"`
+	#~ grep -rle "^Name=$name_top$" "$location" |xargs -d '\n' grep -e "^Comment="|cut -d\= -f2 > "$working_directory/comment"
+	printf "<b>$name_top</b>" > "$working_directory/name"
+	info "$name_top"
+}
+export -f search
+#~ search ea
+
+info(){
+  name="$1"
+  printf "<b>$name</b>" > "$working_directory/name"
+  if [ ! -z "$name" ];then
+		filename=`grep -rle "^Name=$name$" "$location"`
+		grep -e "^Comment=" "$filename"|cut -d\= -f2 |tr -d '\n'> "$working_directory/comment"
+		grep -e "^Exec=" "$filename"|cut -d\= -f2|head -1 > "$working_directory/exec"
+	else
+		echo > "$working_directory/comment"
+		echo > "$working_directory/exec"
+	fi
+}
+info Geany
+export -f info
+
+run(){
+  `cat "$working_directory/exec"` &
+}
+export -f run
+
+# gui
+echo '
+<window title="startm" window_position="1" icon-name="bookmark">
+	<vbox>
+		<entry>
+			<action>search "$e"</action>
+			<action>refresh:t</action>
+			<action>refresh:n</action>
+			<action>refresh:c</action>
+			<action signal="activate">run</action>
+			<action signal="activate">EXIT:exit</action>
+			<variable>e</variable>
+		</entry>
+		<tree rules-hint="true" headers-visible="false" hover-selection="true">
+			<width>400</width>
+			<height>400</height>
+			<input file>'"$working_directory/names"'</input>
+			<action signal="cursor_changed">info "$t"</action>
+			<action signal="cursor_changed">refresh:n</action>
+			<action signal="cursor_changed">refresh:c</action>
+			<action signal="button-release-event">run</action>
+			<action signal="button-release-event">EXIT:exit</action>
+			<action>run</action>
+			<action>EXIT:exit</action>
+			<variable>t</variable>
+		</tree>
+		<text xalign="1" use-markup="true">
+			<input file>'"$working_directory/name"'</input>
+			<variable>n</variable>
+		</text>
+		<text xalign="1">
+			<input file>'"$working_directory/comment"'</input>
+			<variable>c</variable>
+		</text>
+	</vbox>
+	<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Escape ] && echo true )">exit:EXIT</action>
+	<action signal="focus-out-event">exit:EXIT</action>
+</window>' > "$working_directory/gui"
+gtkdialog -f "$working_directory/gui"
